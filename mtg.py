@@ -2,6 +2,7 @@ import random
 
 
 def create_n_grams(corpus, n):
+    """Create a dictionary of n-grams and their frequencies."""
     corpus_dict = {}
     # padding the words with n-1 spaces
     words = [" "] * (n - 1) + corpus + [" "] * (n - 1)
@@ -18,6 +19,7 @@ def create_n_grams(corpus, n):
 
 
 def get_max_freq(n_grams, word_set, prefix, predicted_words):
+    """Find the maximum frequency of a word that follows a prefix."""
     for word in word_set:
         combo = prefix + [word]
         pred_key = tuple(combo)
@@ -51,6 +53,7 @@ def find_predicted_word(n_grams, prefix, corpus, n):
 
 
 def finish_sentence(sentence, n, corpus, deterministic=False):
+    """Finish a sentence using n-grams and Markov assumption."""
     corpus_dict = create_n_grams(corpus, n)
 
     SEN_LEN = 10
@@ -70,7 +73,18 @@ def finish_sentence(sentence, n, corpus, deterministic=False):
             # do a random choice based on the probability distribution
             population = [
                 key for key in corpus_dict.keys() if list(key)[: n - 1] == prefix
-            ]  # double check this
+            ]
+            while len(population) == 0:
+                if n == 0:
+                    # return unknown word if backoff is not possible
+                    sentence.append("UNK")
+                    return sentence
+                n -= 1
+                corpus_dict = create_n_grams(corpus, n)
+                prefix = prefix[1:]
+                population = [
+                    key for key in corpus_dict.keys() if list(key)[: n - 1] == prefix
+                ]
             total_num = sum([corpus_dict[key] for key in population])
             weights = [corpus_dict[key] / total_num for key in population]
             predicted_word = random.choices(population, weights)[0][-1]
